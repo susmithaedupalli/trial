@@ -4,32 +4,51 @@
 
 <script src="http://cdn.sockjs.org/sockjs-0.3.4.min.js"></script>
 <script src='vertxbus.js'></script>
+
+
+
+
+
 </head>
 
 <body>
 	<script>
-var eb = new vertx.EventBus('http://localhost:8080/eventbus');
-eb.onopen = function() {
-	 alert("eventbus opened ");	
-	 eb.send("ping-address", "ping!");
- 	 eb.registerHandler("ping-address", function(msg, replyTo) {
- 		alert("receiving  ");
-         document.getElementById('messages').innerHTML+="<br>"+msg +"   :hi";
+		var eb = new vertx.EventBus('http://localhost:8080/eventbus');
+		eb.onopen = function() {
+			alert("eventbus opened ");	
+			
+			eb.send("ping-address", "ping!", function(message) {
+				alert('Got ' + message + ' in reply');
+			
 
-       });
+			});
+			eb.registerHandler("pong-address", function(msg) {
 
-}
- function send(message) {
-/* 	 if (!eb) {
-    	eb = new vertx.EventBus("http://localhost:8080/eventbus");
-    	
-     }else{ alert(" in else loop eb created ");} */
-	
-	 eb.send('ping-address', message);
-   
- }
+				alert("message received " + msg);
+				//eb.send("pong-address","ok from client");
+				document.getElementById('messages').innerHTML += "<br>" + msg;
+						
 
- </script>
+			});
+
+		}
+		function send(message) {
+			if (!eb) {
+				alert("no eb" + message);
+				eb = new vertx.EventBus("http://localhost:8080/eventbus");
+				alert("eb created ");
+			} else {
+				alert(" in else loop eb created ");
+			}
+		
+			eb.send("ping-address", "ping!", function(x) {
+				alert('Got ' + x + ' in reply');
+				
+
+			});
+
+		}
+	</script>
 
 	<input type="text" name="message" value="Hello, World!" />
 	<input type="button" value="Send Web Socket Data"

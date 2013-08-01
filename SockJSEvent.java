@@ -1,7 +1,6 @@
 package trial;
 
 import org.vertx.java.core.Handler;
-import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.eventbus.EventBus;
 import org.vertx.java.core.eventbus.Message;
 import org.vertx.java.core.http.HttpServer;
@@ -10,10 +9,13 @@ import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.logging.Logger;
 import org.vertx.java.core.sockjs.SockJSServer;
-import org.vertx.java.core.sockjs.SockJSSocket;
 import org.vertx.java.platform.Verticle;
 
-import eventbusbridge.ServerHook;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.GetResponse;
 
 public class SockJSEvent extends Verticle {
 	Logger logger;
@@ -37,20 +39,30 @@ public class SockJSEvent extends Verticle {
 		ServerHook hook = new ServerHook(logger);
 		SockJSServer sockJSServer = vertx.createSockJSServer(server);
 		sockJSServer.setHook(hook);
+
+		JsonArray permitted = new JsonArray();
+		permitted.add(new JsonObject().putString("address", "ping-address"));
+		permitted.add(new JsonObject().putString("address", "pong-address"));
 		sockJSServer.bridge(new JsonObject().putString("prefix", "/eventbus"),
-				new JsonArray(), new JsonArray());
+				permitted, permitted);
 
 		final EventBus eb = vertx.eventBus();
 
-		// eb.send("ping-address", "pong!");
-
 		eb.registerHandler("ping-address", new Handler<Message<String>>() {
-
+			@Override
 			public void handle(Message<String> message) {
 				// Reply to it
-				eb.send("ping-address", "pong!");
 				System.out.println("Received message: " + message.body());
-				// message.reply("pong!");
+
+				eb.send("pong-address", "hi from server",
+						new Handler<Message<String>>() {
+							@Override
+							public void handle(Message<String> reply) {
+								System.out.println("Received reply: "
+										+ reply.body());
+							}
+						});
+
 			}
 		});
 
